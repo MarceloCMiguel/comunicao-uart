@@ -43,6 +43,6 @@ class enlace(object):
         data = self.rx.getNData(size)
         return(data, len(data))
     
-    def getHandshake(self,size):
-        handshake = self.rx.getNHandshake(size)
-        return (handshake)
+    def getOnTime(self,size,timer):
+        data = self.rx.getNOnTime(size,timer)
+        return (data)

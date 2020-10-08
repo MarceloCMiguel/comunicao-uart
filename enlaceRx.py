@@ -72,13 +72,13 @@ class RX(object):
             time.sleep(0.05)                 
         return(self.getBuffer(size))
 
-    def getNHandshake(self,size):
+    def getNOnTime(self,size,timer):
         start = time.time()
         while(self.getBufferLen() < size):
             counting = time.time()
             tempo_esperando = counting - start
             print ("esperando servidor responder a {} segundos" .format(tempo_esperando))
-            if tempo_esperando > 5:
+            if tempo_esperando > timer:
                 return False
             time.sleep(0.05)                 
         return(self.getBuffer(size))
@@ -87,12 +87,4 @@ class RX(object):
     def clearBuffer(self):
         self.buffer = b""
     
-    def bla(self):
-        while True:
-            arrived = self.getBufferLen()
-            time.sleep(1)
-            if arrived !=0:
-                if (arrived > self.getBufferLen()):
-                    False
-        return (self.getBuffer(self.getBufferLen()))
 
