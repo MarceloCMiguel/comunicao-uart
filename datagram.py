@@ -40,32 +40,23 @@ class datagram(object):
         while chegou_tamanho == False:
             # pedindo o head
             rxBuffer, nRx = self.com.getData(10)
-            
             # 2 bytes id
             # 2 bytes n_pacotes
             # 4 bytes size
             # 2 tipo de mensagem
-
-            tipo_msg = int.from_bytes(rxBuffer[0])
-            sensor_id = int.from_bytes(rxBuffer[1])
-            server_id = int.from_bytes(rxBuffer[2])
-            n_total_pacotes = int.from_bytes(rxBuffer[3])
-            n_atual_pacote = int.from_bytes(rxBuffer[4])
-            handshake_ou_sizepayload = int.from_bytes(rxBuffer[5])
-            pacote_solicitado = int.from_bytes(rxBuffer[6])
-            ultimo_pacote_recebido = int.from_bytes(rxBuffer[7])
-            crc = int.from_bytes(rxBuffer[8:10])
+            tipo_msg = rxBuffer[0]
+            sensor_id =rxBuffer[1]
+            server_id = rxBuffer[2]
+            n_total_pacotes =rxBuffer[3]
+            n_atual_pacote = rxBuffer[4]
+            handshake_ou_sizepayload = rxBuffer[5]
+            pacote_solicitado = rxBuffer[6]
+            ultimo_pacote_recebido = rxBuffer[7]
+            crc = int.from_bytes(rxBuffer[8:10], byteorder='big')
             print ("head recebido")
             print ("-"*20)
             
-            # ID_bytes = rxBuffer[0:2]
-            # n_pacotes_bytes = rxBuffer[2:4]
-            # size_bytes= rxBuffer[4:8]
-            # msg_bytes = rxBuffer[8:10]
-
-            # n_pacotes = int.from_bytes(n_pacotes_bytes, byteorder='big')
-            # size = int.from_bytes(size_bytes, byteorder='big')
-            # ID = int.from_bytes(ID_bytes,byteorder='big')
+            print (n_atual_pacote)
             if contador != n_atual_pacote:
                 print ("Erro nos pacotes")
                 print("Enviando Resposta de erro")
@@ -81,7 +72,6 @@ class datagram(object):
             eop,nRx = self.com.getData(4)
             print ("eop recebido")
             print ("-"*20)
-            print ("Pacotes {}/{}".format(len(list_packages),n_total_pacotes))
             if len(list_packages) == n_total_pacotes:
                 chegou_tamanho = True
         return list_packages
@@ -143,24 +133,12 @@ class datagram(object):
         crc_fake = 10
         h8_h9 = crc_fake.to_bytes(2,'big')
         if tipo==1:
-            h0= 1
             h2 = 1
             h2 = h2.to_bytes(1,'big')
-        elif tipo ==2:
-            h0 = 2
         elif tipo == 3:
-            h0 = 3
             #Coloquei esse numero para reconhecer dentro do for de baixo e mostrar que é do tipo 3
             h5 = 3
-        elif tipo ==4:
-            h0 = 4
-            # Nao coloquei o h7 pois ele já esta fora do if
-        elif tipo ==5:
-            h0 = 5
-        else:
-            h0 = 6
-        h0 = h0.to_bytes(1,'big')
-
+        h0 = tipo.to_bytes(1,'big')
         num = 255
         num2 = 170
         num1_tobytes = num.to_bytes(1,'big')
@@ -182,8 +160,7 @@ class datagram(object):
             if h5 == 3:
                 h5 = size.to_bytes(1,'big')
             h4_to_bytes = h4.to_bytes(1,'big')
-            head = ID.to_bytes(2,'big') +n_pacotes_to_bytes + size.to_bytes(4,'big') + mensagem.to_bytes(2,'big')
-            head = h1 + h2 + h3 + h4_to_bytes + h5 + h6 + h7 + h8_h9
+            head = h0+h1 + h2 + h3 + h4_to_bytes + h5 + h6 + h7 + h8_h9
             h4 +=1
             payload = content[contador:contador+size]
             contador +=size
@@ -192,15 +169,51 @@ class datagram(object):
         return list_diagrams
 
     def classificaHead(self,head):
-        tipo_msg = int.from_bytes(head[0])
-        sensor_id = int.from_bytes(head[1])
-        server_id = int.from_bytes(head[2])
-        n_total_pacotes = int.from_bytes(head[3])
-        n_atual_pacote = int.from_bytes(head[4])
-        handshake_ou_sizepayload = int.from_bytes(head[5])
-        pacote_solicitado = int.from_bytes(head[6])
-        ultimo_pacote_recebido = int.from_bytes(head[7])
-        crc = int.from_bytes(head[8:10])
-        print ("head recebido")
-        print ("-"*20)
+        tipo_msg = head[0]
+        sensor_id = head[1]
+        server_id = head[2]
+        n_total_pacotes = head[3]
+        n_atual_pacote = head[4]
+        handshake_ou_sizepayload = head[5]
+        pacote_solicitado = head[6]
+        ultimo_pacote_recebido = head[7]
+        crc = int.from_bytes(head[8:10], byteorder='big')
         return tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc
+
+    def getOnTime(self,timer):
+        # pedindo o head
+        rxBuffer = self.com.getOnTime(10,timer)
+        if rxBuffer == False:
+            return False
+        else:
+            
+            tipo_msg = rxBuffer[0]
+            sensor_id =rxBuffer[1]
+            server_id = rxBuffer[2]
+            n_total_pacotes =rxBuffer[3]
+            n_atual_pacote = rxBuffer[4]
+            handshake_ou_sizepayload = rxBuffer[5]
+            pacote_solicitado = rxBuffer[6]
+            ultimo_pacote_recebido = rxBuffer[7]
+            crc = int.from_bytes(rxBuffer[8:10], byteorder='big')
+            
+            print ("head recebido")
+            print ("-"*20)
+
+            print ("Tipo da mensagem: {}".format(tipo_msg))
+            if handshake_ou_sizepayload != 0:
+                
+                package,nRx = self.com.getData(handshake_ou_sizepayload)
+            else:
+                package,nRx = self.com.getData(10)
+            print ("package recebido")
+            print ("-"*20)
+            #Comentei a linha que faz com que retorne apenas o payload, mais interessante pegar todas as infos
+            #list_packages.append(package)
+            eop,nRx = self.com.getData(4)
+            print ("eop recebido")
+            print ("-"*20)
+            print ("Recebido o pacote de id".format(n_atual_pacote))
+            pacote = rxBuffer + package + eop
+            
+            return pacote

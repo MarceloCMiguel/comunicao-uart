@@ -34,31 +34,54 @@ def main():
         print("-"*20) 
         server = datagram(arduino2)
         server.enable()
-        print ("esperando receber handshake")
-        list_handshake   =server.getDatagrams()
-        
+        ocioso =True
+        while ocioso:
+            print ("Servidor ocioso")
+            print ("esperando receber handshake")
+            list_handshake = server.getDatagrams()
+            print ("passou")
+            #Só tem um indice
+            handshake = list_handshake[0]
+            tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc = server.classificaHead(handshake)
+            print ("tipo de msg chega do handshake {}".format(tipo_msg))
+            # Deve checkar o id, por enquanto n fiz ainda
+            ocioso = False
+            time.sleep(1)
         print ("handshake chegou, enviando uma confirmação")
-        list_datagrams=server.createDatagrams(bytes([10]))
-        for packages in list_datagrams:
-            server.sendDatagram(packages)
-        recebeu_corretamente = False
-        while recebeu_corretamente == False:
-            list_package = server.getDatagrams()
-            if list_package == False:
-                print ("Erro na leitura de Datagrams, retornando mensagem de erro ao client")
-                datagrams_error=server.createDatagrams(bytes([12]))
-                for i in datagrams_error:
-                    server.sendDatagram(i)
-            else:
-                recebeu_corretamente = True
-        
-        print ("package correto tudo certo, retornando mensagem de sucesso")
+        list_msg2 = server.createDatagrams(bytes([7])*10,tipo=2)
+        print (list_msg2)
+        server.sendDatagram(list_msg2[0])
+        print ("Enviado msg2")
         time.sleep(2)
-
-        datagrams_sucess = server.createDatagrams(bytes([11]))
-        for i in datagrams_sucess:
-            server.sendDatagram(i)
-        file = b''.join(list_package)
+        cont = 1
+        # numero qlqr no numpckg apenas para entrar no while, dentro do while chamo o valor correto
+        numPckg = 2
+        num_pckg_anterior= 0
+        list_payload = []
+        while cont <= numPckg:
+            package = server.getOnTime(2)
+            if package ==False:
+                print ("Não recebemos nada, mandando msg tipo 5 e fechando")
+                list_msg5 = server.createDatagrams(bytes([7])*10,tipo=5)
+                server.sendDatagram(list_msg5[0])
+                raise TypeError("Fechando server")
+            else:
+                tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc = server.classificaHead(package)
+                numPckg = n_total_pacotes
+                if (n_atual_pacote - num_pckg_anterior == 1) and (tipo_msg==3) and handshake_ou_sizepayload == len(package)-14:
+                    print ("payload adicionado")
+                    print (package[10:-4])
+                    list_payload.append(package[10:-4])
+                    list_msg4 = server.createDatagrams(bytes([7])*10,tipo=4,ultimo_pacote=n_atual_pacote)
+                    server.sendDatagram(list_msg4[0])
+                    print ("Recebido: {}/{}".format(cont,numPckg))
+                    cont+=1
+                    num_pckg_anterior =n_atual_pacote
+                else:
+                    print (":"*70)
+                    list_msg6 = server.createDatagrams(bytes([7])*10, tipo=6,pacote_esperado=n_atual_pacote)
+        file = b''.join(list_payload)
+        print(len(list_payload))
         print ("Escrevendo a imagem")
         with open("assets/server/receive.png", "wb") as file2:
             file2.write(file)
