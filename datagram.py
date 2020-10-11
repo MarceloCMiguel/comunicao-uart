@@ -33,48 +33,41 @@ class datagram(object):
         
 
     def getDatagrams(self):
-        print("Esperando receber o tamanho da imagem")
-        list_packages = []
-        chegou_tamanho = False
-        contador = 1
-        while chegou_tamanho == False:
-            # pedindo o head
-            rxBuffer, nRx = self.com.getData(10)
-            # 2 bytes id
-            # 2 bytes n_pacotes
-            # 4 bytes size
-            # 2 tipo de mensagem
-            tipo_msg = rxBuffer[0]
-            sensor_id =rxBuffer[1]
-            server_id = rxBuffer[2]
-            n_total_pacotes =rxBuffer[3]
-            n_atual_pacote = rxBuffer[4]
-            handshake_ou_sizepayload = rxBuffer[5]
-            pacote_solicitado = rxBuffer[6]
-            ultimo_pacote_recebido = rxBuffer[7]
-            crc = int.from_bytes(rxBuffer[8:10], byteorder='big')
-            print ("head recebido")
-            print ("-"*20)
+        # pedindo o head
+        print("Esperando receber o handshake")
+        rxBuffer,nRxBuffer = self.com.getData(10)
+        
+        
+        tipo_msg = rxBuffer[0]
+        sensor_id =rxBuffer[1]
+        server_id = rxBuffer[2]
+        n_total_pacotes =rxBuffer[3]
+        n_atual_pacote = rxBuffer[4]
+        handshake_ou_sizepayload = rxBuffer[5]
+        pacote_solicitado = rxBuffer[6]
+        ultimo_pacote_recebido = rxBuffer[7]
+        crc = int.from_bytes(rxBuffer[8:10], byteorder='big')
+        
+        print ("head recebido")
+        print ("-"*20)
+
+        print ("Tipo da mensagem: {}".format(tipo_msg))
+        if handshake_ou_sizepayload != 0:
             
-            print (n_atual_pacote)
-            if contador != n_atual_pacote:
-                print ("Erro nos pacotes")
-                print("Enviando Resposta de erro")
-                return False
-            contador +=1
-            if handshake_ou_sizepayload != 0:
-                package,nRx = self.com.getData(handshake_ou_sizepayload)
-            else:
-                package,nRx = self.com.getData(10)
-            print ("package recebido")
-            print ("-"*20)
-            list_packages.append(package)
-            eop,nRx = self.com.getData(4)
-            print ("eop recebido")
-            print ("-"*20)
-            if len(list_packages) == n_total_pacotes:
-                chegou_tamanho = True
-        return list_packages
+            package,nRx = self.com.getData(handshake_ou_sizepayload)
+        else:
+            package,nRx = self.com.getData(10)
+        print ("package recebido")
+        print ("-"*20)
+        #Comentei a linha que faz com que retorne apenas o payload, mais interessante pegar todas as infos
+        #list_packages.append(package)
+        eop,nRx = self.com.getData(4)
+        print ("eop recebido")
+        print ("-"*20)
+        print ("Recebido o pacote de id {}".format(n_atual_pacote))
+        pacote = rxBuffer + package + eop
+        
+        return pacote
 
 
     def sendDatagram(self,datagram):
@@ -112,7 +105,8 @@ class datagram(object):
         else:
             n_pacotes = 1
             lista_size.append(len(content))
-
+        print ("Lista size")
+        print (lista_size)
          # numero de pacotes em bytes
         n_pacotes_to_bytes = n_pacotes.to_bytes(1,'big')
         #Head
@@ -122,7 +116,6 @@ class datagram(object):
         h2 = h2.to_bytes(1,'big')
         h3 = n_pacotes_to_bytes
         h5 = 0
-        h5 = h5.to_bytes(1,'big')
         # Vai aumentando no loop
         h4 = 1
         h6 = pacote_esperado.to_bytes(1,'big')
@@ -158,9 +151,12 @@ class datagram(object):
         contador = 0
         for size in lista_size:
             if h5 == 3:
-                h5 = size.to_bytes(1,'big')
+                tamanho = size.to_bytes(1,'big')
+            else:
+                bla = 0
+                tamanho = bla.to_bytes(1,'big')
             h4_to_bytes = h4.to_bytes(1,'big')
-            head = h0+h1 + h2 + h3 + h4_to_bytes + h5 + h6 + h7 + h8_h9
+            head = h0+h1 + h2 + h3 + h4_to_bytes + tamanho + h6 + h7 + h8_h9
             h4 +=1
             payload = content[contador:contador+size]
             contador +=size
@@ -202,7 +198,7 @@ class datagram(object):
 
             print ("Tipo da mensagem: {}".format(tipo_msg))
             if handshake_ou_sizepayload != 0:
-                
+                print ("Esperando pacote de tamanho {}".format(handshake_ou_sizepayload))
                 package,nRx = self.com.getData(handshake_ou_sizepayload)
             else:
                 package,nRx = self.com.getData(10)
@@ -213,7 +209,7 @@ class datagram(object):
             eop,nRx = self.com.getData(4)
             print ("eop recebido")
             print ("-"*20)
-            print ("Recebido o pacote de id".format(n_atual_pacote))
+            print ("Recebido o pacote de id {}".format(n_atual_pacote))
             pacote = rxBuffer + package + eop
             
             return pacote

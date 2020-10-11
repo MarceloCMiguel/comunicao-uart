@@ -38,11 +38,6 @@ def main():
         
         # HandShake
         valor_handshake = bytes([7])*10
-
-        with open("C:/Users/marce/Desktop/Insper/4 semestre/CamFis/Client-Server/assets/client/image_test.png", "rb") as file1:
-            txBuffer = file1.read()
-
-
         inicia = False
         while inicia == False:
             list_handshake = client.createDatagrams(valor_handshake,1)
@@ -71,12 +66,16 @@ def main():
 
         start = time.time()
         cont = 1
-        with open("C:/Users/marce/Desktop/Insper/4 semestre/CamFis/Client-Server/assets/client/image_test.png", "rb") as file1:
+        with open("C:/Users/marce/Desktop/Insper/4 semestre/CamFis/Comunicação UART/assets/client/image_test.png", "rb") as file1:
             txBuffer = file1.read()
+        #print (txBuffer)
         list_datagrams = client.createDatagrams(txBuffer,3)
         print ("Começando a enviar o arquivo")
         print (len(list_datagrams))
         while cont <= len(list_datagrams):
+            
+            print("Cont :{}".format(cont))
+            print ("Enviando esse pacote: {}".format(list_datagrams[cont-1]))
             print ("Enviando o package {}".format(cont-1))
             # Enviou um package da lista
             client.sendDatagram(list_datagrams[cont-1])
@@ -91,12 +90,11 @@ def main():
                 tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc = client.classificaHead(package_resposta)
                 print("tipo_msg recebido: {}".format(tipo_msg))
                 if tipo_msg == 4:
-                    cont +=1
                     print ("Enviado: {}/{}".format(cont,len(list_datagrams)))
+                    cont +=1
                 else:
-                    print ("Mandando novamente")
+                    print ("Mandando novamenteeeee"*5)
                     #volta pro começo do while
-
 
         print("-------------------------")
         print("Comunicação encerrada")

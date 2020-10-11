@@ -38,10 +38,11 @@ def main():
         while ocioso:
             print ("Servidor ocioso")
             print ("esperando receber handshake")
-            list_handshake = server.getDatagrams()
-            print ("passou")
+            handshake = server.getDatagrams()
             #Só tem um indice
-            handshake = list_handshake[0]
+            print (handshake)
+            print ("Payload")
+            print (handshake[10:-4])
             tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc = server.classificaHead(handshake)
             print ("tipo de msg chega do handshake {}".format(tipo_msg))
             # Deve checkar o id, por enquanto n fiz ainda
@@ -52,14 +53,15 @@ def main():
         print (list_msg2)
         server.sendDatagram(list_msg2[0])
         print ("Enviado msg2")
-        time.sleep(2)
+        time.sleep(1)
         cont = 1
         # numero qlqr no numpckg apenas para entrar no while, dentro do while chamo o valor correto
         numPckg = 2
         num_pckg_anterior= 0
         list_payload = []
         while cont <= numPckg:
-            package = server.getOnTime(2)
+            print("Cont: {}".format(cont))
+            package = server.getOnTime(3)
             if package ==False:
                 print ("Não recebemos nada, mandando msg tipo 5 e fechando")
                 list_msg5 = server.createDatagrams(bytes([7])*10,tipo=5)
@@ -68,7 +70,10 @@ def main():
             else:
                 tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc = server.classificaHead(package)
                 numPckg = n_total_pacotes
-                if (n_atual_pacote - num_pckg_anterior == 1) and (tipo_msg==3) and handshake_ou_sizepayload == len(package)-14:
+                print("Numero do packg anterior {}".format(num_pckg_anterior))
+                print ("Numero atual do pacote: {}".format(n_atual_pacote))
+                print ("NumPckg: {}".format(numPckg))
+                if (n_atual_pacote - num_pckg_anterior == 1) and (tipo_msg==3) and (handshake_ou_sizepayload == len(package)-14):
                     print ("payload adicionado")
                     print (package[10:-4])
                     list_payload.append(package[10:-4])
@@ -81,6 +86,7 @@ def main():
                     print (":"*70)
                     list_msg6 = server.createDatagrams(bytes([7])*10, tipo=6,pacote_esperado=n_atual_pacote)
         file = b''.join(list_payload)
+        print (file)
         print(len(list_payload))
         print ("Escrevendo a imagem")
         with open("assets/server/receive.png", "wb") as file2:
