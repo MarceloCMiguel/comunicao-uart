@@ -12,7 +12,7 @@ import time
 
 # Interface Física
 from interfaceFisica import fisica
-
+import crcmod
 # enlace Tx e Rx
 from enlace import enlace
 
@@ -120,11 +120,7 @@ class datagram(object):
         h4 = 1
         h6 = pacote_esperado.to_bytes(1,'big')
         h7 = ultimo_pacote.to_bytes(1,'big')
-        #crc16_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFFFFFF) #armazena a funcao que faz o bagui
-        #crc_out = crc16_func(e).to_bytes(2, "little")
-        #h8_h9 = crc_out
-        crc_fake = 10
-        h8_h9 = crc_fake.to_bytes(2,'big')
+        crc16_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFFFFFF) #armazena a funcao que faz o bagui
         if tipo==1:
             h2 = 1
             h2 = h2.to_bytes(1,'big')
@@ -155,10 +151,12 @@ class datagram(object):
             else:
                 bla = 0
                 tamanho = bla.to_bytes(1,'big')
-            h4_to_bytes = h4.to_bytes(1,'big')
-            head = h0+h1 + h2 + h3 + h4_to_bytes + tamanho + h6 + h7 + h8_h9
-            h4 +=1
             payload = content[contador:contador+size]
+            crc_out = crc16_func(payload).to_bytes(2, "big")
+            h4_to_bytes = h4.to_bytes(1,'big')
+            head = h0+h1 + h2 + h3 + h4_to_bytes + tamanho + h6 + h7 + crc_out
+            h4 +=1
+            
             contador +=size
             diagrama = head + payload + eop
             list_diagrams.append(diagrama)
@@ -173,7 +171,7 @@ class datagram(object):
         handshake_ou_sizepayload = head[5]
         pacote_solicitado = head[6]
         ultimo_pacote_recebido = head[7]
-        crc = int.from_bytes(head[8:10], byteorder='big')
+        crc = head[8:10]
         return tipo_msg,sensor_id,server_id,n_total_pacotes,n_atual_pacote,handshake_ou_sizepayload, pacote_solicitado, ultimo_pacote_recebido, crc
 
     def getOnTime(self,timer):
