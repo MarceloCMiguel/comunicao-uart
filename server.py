@@ -59,7 +59,7 @@ def main():
         list_payload = []
         crc16_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFFFFFF) #armazena a funcao que faz o bagui
         while cont <= numPckg:
-            package = server.getOnTime(3)
+            package = server.getOnTime(20)
             if package ==False:
                 logging.info("ENCERRANDO COMUNICAÇÃO POR FALTA DE RESPOSTA DO CLIENT")
                 list_msg5 = server.createDatagrams(bytes([7])*10,tipo=5)
